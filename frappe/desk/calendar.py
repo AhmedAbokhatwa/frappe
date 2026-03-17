@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 from frappe.query_builder import functions
 from frappe.query_builder.terms import ValueWrapper
-
+from datetime import datetime
 
 @frappe.whitelist()
 def update_event(args: str, field_map: str):
@@ -66,4 +66,19 @@ def get_events(
 	]
 
 	fields = list({field for field in fields if field})
-	return frappe.get_list(doctype, fields=fields, filters=filters)
+	events = frappe.get_list(doctype, fields=fields, filters=filters)
+
+	for event in events:
+		start_val = event.get(field_map.start)
+		end_val = event.get(field_map.end)
+
+		start_has_time = (
+			isinstance(start_val, datetime) and (start_val.hour != 0 or start_val.minute != 0)
+		)
+		end_has_time = (
+			isinstance(end_val, datetime) and (end_val.hour != 0 or end_val.minute != 0)
+		)
+
+		event["allDay"] = not (start_has_time or end_has_time)
+
+	return events
